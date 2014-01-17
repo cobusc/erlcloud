@@ -34,7 +34,7 @@ get_value(XPath, Type, Node) ->
         optional_integer ->
             case get_text(XPath, Node, undefined) of
                 undefined -> undefined;
-                Text -> list_to_integer(Text)
+                Text -> list_to_integer(binary_to_list(Text))
             end;
         float -> get_float(XPath, Node);
         time -> get_time(XPath, Node);
@@ -43,7 +43,7 @@ get_value(XPath, Type, Node) ->
         optional_boolean ->
             case get_text(XPath, Node, undefined) of
                 undefined -> undefined;
-                "true" -> true;
+                <<"true">> -> true;
                 _ -> false
             end;
         present -> xmerl_xpath:string(XPath, Node) =/= [];
@@ -67,13 +67,15 @@ get_value(XPath, Type, Node) ->
     end.
 
 get_float(XPath, Node) ->
-    list_to_float(get_text(XPath, Node)).
+    Val = get_text(XPath, Node),
+    list_to_float(binary_to_list(Val)).
 
 get_text(#xmlText{value=Value}) -> Value;
 get_text(#xmlElement{content=Content}) ->
-    lists:flatten([get_text(Node) || Node <- Content]).
+    list_to_binary(lists:flatten([binary_to_list(get_text(Node)) || Node <- Content])).
 
-get_text(XPath, Doc) -> get_text(XPath, Doc, "").
+get_text(XPath, Doc) -> 
+    get_text(XPath, Doc, <<"">>).
 get_text({XPath, AttrName}, Doc, Default) ->
     case xmerl_xpath:string(XPath ++ "/@" ++ AttrName, Doc) of
         [] -> Default;
@@ -83,7 +85,7 @@ get_text(XPath, Doc, Default) ->
     case xmerl_xpath:string(XPath ++ "/text()", Doc) of
         [] -> Default;
         TextNodes ->
-            lists:flatten([Node#xmlText.value || Node <- TextNodes])
+            list_to_binary(lists:flatten([binary_to_list(Node#xmlText.value) || Node <- TextNodes]))
     end.
 
 get_list(XPath, Doc) ->
@@ -92,20 +94,20 @@ get_list(XPath, Doc) ->
 get_integer(XPath, Doc) -> get_integer(XPath, Doc, 0).
 get_integer(XPath, Doc, Default) ->
     case get_text(XPath, Doc) of
-        "" -> Default;
-        Text -> list_to_integer(Text)
+        <<"">> -> Default;
+        Text -> list_to_integer(binary_to_list(Text))
     end.
 
 get_bool(XPath, Doc) ->
     case get_text(XPath, Doc, "false") of
-        "true" -> true;
+        <<"true">> -> true;
         _ -> false
     end.
 
 get_time(XPath, Doc) ->
     case get_text(XPath, Doc, undefined) of
         undefined -> undefined;
-        Time -> parse_time(Time)
+        Time -> parse_time(binary_to_list(Time))
     end.
 
 parse_time(String) ->

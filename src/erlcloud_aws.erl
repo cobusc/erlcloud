@@ -18,25 +18,53 @@
          expiration_gregorian_seconds :: integer()
         }).
 
+%aws_request_xml(Method, Host, Path, Params, #aws_config{} = Config) ->
+%    Body = aws_request(Method, Host, Path, Params, Config),
+%    element(1, xmerl_scan:string(Body)).
+%aws_request_xml(Method, Host, Path, Params, AccessKeyID, SecretAccessKey) ->
+%    Body = aws_request(Method, Host, Path, Params, AccessKeyID, SecretAccessKey),
+%    element(1, xmerl_scan:string(Body)).
+%aws_request_xml(Method, Protocol, Host, Port, Path, Params, #aws_config{} = Config) ->
+%    Body = aws_request(Method, Protocol, Host, Port, Path, Params, Config),
+%    element(1, xmerl_scan:string(Body)).
+%aws_request_xml(Method, Protocol, Host, Port, Path, Params, AccessKeyID, SecretAccessKey) ->
+%    Body = aws_request(Method, Protocol, Host, Port, Path, Params, AccessKeyID, SecretAccessKey),
+%    element(1, xmerl_scan:string(Body)).
+%
+%aws_request_xml2(Method, Host, Path, Params, #aws_config{} = Config) ->
+%    aws_request_xml2(Method, undefined, Host, undefined, Path, Params, Config).
+%aws_request_xml2(Method, Protocol, Host, Port, Path, Params, #aws_config{} = Config) ->
+%    case aws_request2(Method, Protocol, Host, Port, Path, Params, Config) of
+%        {ok, Body} ->
+%            {ok, element(1, xmerl_scan:string(Body))};
+%        {error, Reason} ->
+%            {error, Reason}
+%    end.
+
 aws_request_xml(Method, Host, Path, Params, #aws_config{} = Config) ->
     Body = aws_request(Method, Host, Path, Params, Config),
-    element(1, xmerl_scan:string(Body)).
+    {ok, SimpleFormElement, _Rest} = erlsom_complex_form:scan(Body, [{output_encoding, utf8}]),
+    SimpleFormElement.
 aws_request_xml(Method, Host, Path, Params, AccessKeyID, SecretAccessKey) ->
     Body = aws_request(Method, Host, Path, Params, AccessKeyID, SecretAccessKey),
-    element(1, xmerl_scan:string(Body)).
+    {ok, SimpleFormElement, _Rest} = erlsom_complex_form:scan(Body, [{output_encoding, utf8}]),
+    SimpleFormElement.
 aws_request_xml(Method, Protocol, Host, Port, Path, Params, #aws_config{} = Config) ->
     Body = aws_request(Method, Protocol, Host, Port, Path, Params, Config),
-    element(1, xmerl_scan:string(Body)).
+    {ok, SimpleFormElement, _Rest} = erlsom_complex_form:scan(Body, [{output_encoding, utf8}]),
+    SimpleFormElement.
 aws_request_xml(Method, Protocol, Host, Port, Path, Params, AccessKeyID, SecretAccessKey) ->
     Body = aws_request(Method, Protocol, Host, Port, Path, Params, AccessKeyID, SecretAccessKey),
-    element(1, xmerl_scan:string(Body)).
+    {ok, SimpleFormElement, _Rest} = erlsom_complex_form:scan(Body, [{output_encoding, utf8}]),
+    SimpleFormElement.
 
 aws_request_xml2(Method, Host, Path, Params, #aws_config{} = Config) ->
     aws_request_xml2(Method, undefined, Host, undefined, Path, Params, Config).
 aws_request_xml2(Method, Protocol, Host, Port, Path, Params, #aws_config{} = Config) ->
     case aws_request2(Method, Protocol, Host, Port, Path, Params, Config) of
         {ok, Body} ->
-            {ok, element(1, xmerl_scan:string(Body))};
+            {ok, SimpleFormElement, _Rest} = erlsom_complex_form:scan(Body, [{output_encoding, utf8}]),
+            {ok, SimpleFormElement};
         {error, Reason} ->
             {error, Reason}
     end.
@@ -101,11 +129,11 @@ aws_request2_no_update(Method, Protocol, Host, Port, Path, Params, #aws_config{}
         case Method of
             get ->
                 Req = lists:flatten([URL, $?, Query]),
-                httpc:request(get, {Req, []}, [{timeout, Config#aws_config.timeout}], []);
+                httpc:request(get, {Req, []}, [{timeout, Config#aws_config.timeout}], [{body_format, binary}]);
             _ ->
                 httpc:request(Method,
                               {lists:flatten(URL), [], "application/x-www-form-urlencoded; charset=utf-8",
-                               list_to_binary(Query)}, [{timeout, Config#aws_config.timeout}], [])
+                              list_to_binary(Query)}, [{timeout, Config#aws_config.timeout}], [{body_format, binary}])
         end,
     
     http_body(Response).

@@ -248,7 +248,7 @@ select(SelectExpression, NextToken, ConsistentRead) ->
 -spec select/4 :: (string(), string() | none, boolean(), aws_config()) -> proplist().
 select(SelectExpression, NextToken, ConsistentRead, Config)
   when is_list(SelectExpression),
-       is_list(NextToken) orelse NextToken =:= none,
+       is_binary(NextToken) orelse NextToken =:= none,
        is_boolean(ConsistentRead) ->
     {Items, NewNextToken, Metadata} = sdb_select_request(SelectExpression,
                                                          NextToken,
